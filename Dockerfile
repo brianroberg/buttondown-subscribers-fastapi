@@ -1,7 +1,7 @@
 # ============================================
 # Stage 1: Builder - Install dependencies
 # ============================================
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN python -m compileall /tmp/app
 # ============================================
 # Stage 2: Runtime - Production image
 # ============================================
-FROM python:3.12-slim as runtime
+FROM python:3.12-slim AS runtime
 
 WORKDIR /app
 
@@ -47,5 +47,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=2)"
 
-# Shell form for $PORT substitution (Cloud Run)
-CMD exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}
+# JSON form with shell for $PORT substitution (Cloud Run) and proper signal handling
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
