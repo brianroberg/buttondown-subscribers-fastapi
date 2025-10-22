@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: buttondown-tracker-dev
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --log-level debug
+    volumes:
+      # Mount source code for hot reload
+      - ./app:/app/app
+      # Database persistence
+      - ./data:/app/data
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - PORT=8000
+      - DATABASE_URL=sqlite:///./data/dev.db
+    env_file:
+      - .env.development
+    restart: unless-stopped
+
+volumes:
+  data:
