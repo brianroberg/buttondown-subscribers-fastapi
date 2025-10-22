@@ -35,5 +35,9 @@ dist/
 build/
 *.egg-info/
 
+# Node.js / Frontend
+node_modules/
+package-lock.json
+
 # Logs
 *.log
