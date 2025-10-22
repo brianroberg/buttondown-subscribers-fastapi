@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # Buttondown
     buttondown_webhook_secret: str = ""
     buttondown_api_key: str = ""
+    buttondown_webhook_id: str = ""  # For testing API
 
     # Security
     secret_key: str

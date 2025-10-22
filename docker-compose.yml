@@ -8,6 +8,8 @@ services:
     volumes:
       # Mount source code for hot reload
       - ./app:/app/app
+      # Mount tests for development
+      - ./tests:/app/tests
       # Database persistence
       - ./data:/app/data
       # Exclude Python cache
