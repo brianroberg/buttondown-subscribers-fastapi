@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import init_db
-from app.routers import webhooks
+from app.routers import webhooks, dashboard
 import logging
 import os
 
@@ -68,6 +68,7 @@ def read_root():
 
 # Include routers
 app.include_router(webhooks.router)
+app.include_router(dashboard.router)
 
 if __name__ == "__main__":
     import uvicorn

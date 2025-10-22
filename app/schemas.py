@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from typing import Optional, Literal
-from datetime import datetime
+from typing import Optional, Literal, List
+from datetime import datetime, date
 from enum import Enum
 
 class EventType(str, Enum):
@@ -50,5 +50,43 @@ class SubscriberInDB(SubscriberBase):
     buttondown_id: str
     subscription_date: datetime
     created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+# Dashboard response schemas
+
+class DashboardStats(BaseModel):
+    """Overall dashboard statistics"""
+    total_subscribers: int
+    active_subscribers: int
+    total_opens: int
+    total_clicks: int
+    engagement_rate: float
+    period_start: datetime
+    period_end: datetime
+
+class TopSubscriber(BaseModel):
+    """Top engaged subscriber"""
+    subscriber_id: int
+    email: Optional[str]
+    first_name: Optional[str]
+    last_name: Optional[str]
+    total_opens: int
+    total_clicks: int
+    total_engagement: int
+
+class EngagementTrend(BaseModel):
+    """Daily engagement trend"""
+    date: date
+    opens: int
+    clicks: int
+    total: int
+
+class EventResponse(BaseModel):
+    """Event response schema"""
+    id: int
+    event_type: str
+    created_at: datetime
+    event_metadata: Optional[dict] = None
 
     model_config = ConfigDict(from_attributes=True)
