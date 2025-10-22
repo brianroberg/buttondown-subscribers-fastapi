@@ -1432,11 +1432,11 @@ def test_api_docs_available(client):
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] All tests pass: `pytest tests/`
-- [ ] Coverage >80%: `pytest --cov=app --cov-report=term-missing`
-- [ ] Coverage report generated: Open `htmlcov/index.html`
+- [x] All tests pass: `pytest tests/`
+- [x] Coverage >80%: `pytest --cov=app --cov-report=term-missing`
+- [x] Coverage report generated: Open `htmlcov/index.html`
 - [ ] No test warnings: `pytest -W error`
-- [ ] Tests run in Docker: `docker compose run web pytest`
+- [x] Tests run in Docker: `docker compose run web pytest`
 
 #### Manual Verification:
 - [ ] Review coverage report for gaps
