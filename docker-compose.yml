@@ -12,6 +12,8 @@ services:
       - ./tests:/app/tests
       # Mount pytest configuration
       - ./pytest.ini:/app/pytest.ini
+      # Mount frontend build
+      - ./frontend/dist:/app/frontend/dist
       # Database persistence
       - ./data:/app/data
       # Exclude Python cache
