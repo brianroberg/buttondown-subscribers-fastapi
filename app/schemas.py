@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, Literal
 from datetime import datetime
 from enum import Enum
@@ -22,8 +22,8 @@ class ButtondownWebhookPayload(BaseModel):
     event_type: EventType
     data: ButtondownSubscriberData
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "event_type": "subscriber.opened",
                 "data": {
@@ -31,6 +31,7 @@ class ButtondownWebhookPayload(BaseModel):
                 }
             }
         }
+    )
 
 class SubscriberBase(BaseModel):
     """Base subscriber schema"""
@@ -50,5 +51,4 @@ class SubscriberInDB(SubscriberBase):
     subscription_date: datetime
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

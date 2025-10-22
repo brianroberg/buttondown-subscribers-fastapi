@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
@@ -15,11 +16,27 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
-# Initialize FastAPI
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler for startup and shutdown events"""
+    # Startup
+    logger.info(f"Starting {settings.app_name} in {settings.environment} mode")
+    init_db()
+    logger.info("Database initialized")
+
+    yield
+
+    # Shutdown (if needed in future)
+    logger.info("Shutting down application")
+
+
+# Initialize FastAPI with lifespan
 app = FastAPI(
     title=settings.app_name,
     description="Track and analyze Buttondown subscriber engagement",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -30,12 +47,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info(f"Starting {settings.app_name} in {settings.environment} mode")
-    init_db()
-    logger.info("Database initialized")
 
 @app.get("/health", tags=["Health"])
 def health_check():

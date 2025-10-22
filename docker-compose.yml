@@ -10,6 +10,8 @@ services:
       - ./app:/app/app
       # Mount tests for development
       - ./tests:/app/tests
+      # Mount pytest configuration
+      - ./pytest.ini:/app/pytest.ini
       # Database persistence
       - ./data:/app/data
       # Exclude Python cache
