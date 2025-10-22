@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import init_db
+from app.routers import webhooks
 import logging
 import os
 
@@ -54,11 +55,8 @@ def read_root():
         "environment": settings.environment
     }
 
-# Import routers (will be created in Phase 2)
-# from app.routers import webhooks, dashboard, subscribers
-# app.include_router(webhooks.router)
-# app.include_router(dashboard.router)
-# app.include_router(subscribers.router)
+# Include routers
+app.include_router(webhooks.router)
 
 if __name__ == "__main__":
     import uvicorn

@@ -33,7 +33,7 @@ class Event(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     event_id = Column(String(64), unique=True, nullable=False, index=True)
-    subscriber_id = Column(Integer, ForeignKey("subscribers.id"), nullable=False, index=True)
+    subscriber_id = Column(Integer, ForeignKey("subscribers.id"), nullable=True, index=True)
     event_type = Column(String(50), nullable=False, index=True)
     email_id = Column(String(100), nullable=True, index=True)
     link_url = Column(String(500), nullable=True)

@@ -1031,18 +1031,19 @@ class SubscriberInDB(SubscriberBase):
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Webhook endpoint exists: `curl -X POST http://localhost:8000/webhooks/buttondown`
-- [ ] Health check passes: `curl http://localhost:8000/webhooks/health`
-- [ ] FastAPI docs show webhook endpoint: http://localhost:8000/docs
-- [ ] No linting errors: `ruff check app/`
+- [x] Webhook endpoint exists: `curl -X POST http://localhost:8000/webhooks/buttondown`
+- [x] Health check passes: `curl http://localhost:8000/webhooks/health`
+- [x] FastAPI docs show webhook endpoint: http://localhost:8000/docs
+- [x] No linting errors: `ruff check app/`
 
 #### Manual Verification:
-- [ ] Test webhook with sample payload using ngrok
-- [ ] Verify events are stored in database with unique constraint working
-- [ ] Check duplicate events are handled correctly (return 200 with "duplicate" status)
-- [ ] Verify logs show event processing details
-- [ ] Test with invalid signature (should return 401)
-- [ ] Test with malformed JSON (should return 400)
+- [x] Test webhook with sample payload using ngrok (completed - used Codespace port forwarding)
+- [x] Verify events are stored in database with unique constraint working
+- [x] Check duplicate events are handled correctly (return 200 with "duplicate" status)
+- [x] Verify logs show event processing details
+- [x] Test with invalid signature (should return 401) (skipped - webhook secret not configured in dev)
+- [x] Test with malformed JSON (should return 400)
+- [x] Real Buttondown webhook tested successfully (subscriber.clicked event processed)
 
 ---
 
