@@ -71,3 +71,13 @@ class SubscriberTag(Base):
         Index('idx_subscriber_tag', 'subscriber_id', 'tag_id', unique=True),
         Index('idx_tag_subscriber', 'tag_id', 'subscriber_id'),
     )
+
+
+class SyncState(Base):
+    __tablename__ = "sync_states"
+
+    key = Column(String(100), primary_key=True)
+    last_synced_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    payload = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

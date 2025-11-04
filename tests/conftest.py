@@ -73,15 +73,3 @@ def sample_subscriber(test_db):
     test_db.commit()
     test_db.refresh(subscriber)
     return subscriber
-
-
-@pytest.fixture
-def sample_webhook_payload():
-    """Sample Buttondown webhook payload"""
-    return {
-        "event_type": "subscriber.opened",
-        "data": {
-            "subscriber": "test-subscriber-id",
-            "email": "test@example.com"
-        }
-    }

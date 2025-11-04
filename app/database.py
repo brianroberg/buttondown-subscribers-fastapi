@@ -43,5 +43,5 @@ def get_db():
 def init_db():
     """Initialize database tables"""
     # Import models to register them with SQLAlchemy
-    from app.models import Subscriber, Event, Tag, SubscriberTag  # noqa: F401
+    from app.models import Subscriber, Event, Tag, SubscriberTag, SyncState  # noqa: F401
     Base.metadata.create_all(bind=engine)

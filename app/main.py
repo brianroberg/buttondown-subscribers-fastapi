@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.config import get_settings
 from app.database import init_db
-from app.routers import webhooks, dashboard
+from app.routers import dashboard, sync
 import logging
 import os
 from pathlib import Path
@@ -62,7 +62,7 @@ def startup_probe():
     return {"status": "ready"}
 
 # Include routers
-app.include_router(webhooks.router)
+app.include_router(sync.router)
 app.include_router(dashboard.router)
 
 # Serve static files from frontend build when available
@@ -80,7 +80,7 @@ if frontend_dist.exists() and assets_dir.is_dir():
     async def serve_frontend(full_path: str = ""):
         """Serve frontend for all non-API routes"""
         # Don't serve frontend for API routes
-        if full_path.startswith("api/") or full_path.startswith("webhooks/") or full_path in ["health", "startup", "docs", "redoc", "openapi.json"]:
+        if full_path.startswith("api/") or full_path in ["health", "startup", "docs", "redoc", "openapi.json"]:
             raise HTTPException(status_code=404)
 
         # Serve root or specific files

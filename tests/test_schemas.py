@@ -1,65 +1,14 @@
 import pytest
+from datetime import datetime, timezone
 from pydantic import ValidationError
+
 from app.schemas import (
-    EventType,
-    ButtondownSubscriberData,
-    ButtondownWebhookPayload,
     SubscriberCreate,
     SubscriberInDB,
+    SyncResponse,
+    SyncStateResponse,
 )
-from datetime import datetime
-
-
-def test_event_type_enum():
-    """Test EventType enum values"""
-    assert EventType.SUBSCRIBER_OPENED == "subscriber.opened"
-    assert EventType.SUBSCRIBER_CLICKED == "subscriber.clicked"
-    assert EventType.SUBSCRIBER_CONFIRMED == "subscriber.confirmed"
-    assert EventType.SUBSCRIBER_DELIVERED == "subscriber.delivered"
-    assert EventType.SUBSCRIBER_UNSUBSCRIBED == "subscriber.unsubscribed"
-    assert EventType.EMAIL_SENT == "email.sent"
-
-
-def test_buttondown_subscriber_data_valid():
-    """Test valid ButtondownSubscriberData"""
-    data = ButtondownSubscriberData(
-        subscriber="test-uuid-123",
-        email="test@example.com"
-    )
-    assert data.subscriber == "test-uuid-123"
-    assert data.email == "test@example.com"
-
-
-def test_buttondown_subscriber_data_without_email():
-    """Test ButtondownSubscriberData without email (optional)"""
-    data = ButtondownSubscriberData(subscriber="test-uuid-123")
-    assert data.subscriber == "test-uuid-123"
-    assert data.email is None
-
-
-def test_buttondown_webhook_payload_valid():
-    """Test valid ButtondownWebhookPayload"""
-    payload = ButtondownWebhookPayload(
-        event_type=EventType.SUBSCRIBER_OPENED,
-        data=ButtondownSubscriberData(subscriber="test-uuid")
-    )
-    assert payload.event_type == EventType.SUBSCRIBER_OPENED
-    assert payload.data.subscriber == "test-uuid"
-
-
-def test_buttondown_webhook_payload_from_dict():
-    """Test creating ButtondownWebhookPayload from dict"""
-    payload_dict = {
-        "event_type": "subscriber.clicked",
-        "data": {
-            "subscriber": "test-uuid-456",
-            "email": "user@example.com"
-        }
-    }
-    payload = ButtondownWebhookPayload(**payload_dict)
-    assert payload.event_type == EventType.SUBSCRIBER_CLICKED
-    assert payload.data.subscriber == "test-uuid-456"
-    assert payload.data.email == "user@example.com"
+from app.services.buttondown_sync import SyncOutcome
 
 
 def test_subscriber_create_valid():
@@ -121,3 +70,35 @@ def test_subscriber_in_db_from_orm():
     assert subscriber.id == 1
     assert subscriber.buttondown_id == "btn-789"
     assert subscriber.email == "orm@example.com"
+
+
+def test_sync_response_from_outcome():
+    """SyncResponse should mirror SyncOutcome values."""
+    timestamp = datetime.now(timezone.utc)
+    outcome = SyncOutcome(
+        events_created=5,
+        events_skipped=1,
+        subscribers_created=2,
+        subscribers_updated=3,
+        requested_since=timestamp,
+        effective_since=timestamp,
+        latest_event_at=timestamp,
+        last_synced_at=timestamp,
+    )
+
+    response = SyncResponse.from_outcome(outcome)
+    assert response.events_created == 5
+    assert response.events_skipped == 1
+    assert response.subscribers_created == 2
+    assert response.latest_event_at == timestamp
+
+
+def test_sync_state_response_defaults():
+    """SyncStateResponse should expose default values."""
+    result = SyncStateResponse(
+        last_synced_at=None,
+        default_lookback_days=30,
+        pending_initial_sync=True,
+    )
+    assert result.pending_initial_sync is True
+    assert result.default_lookback_days == 30

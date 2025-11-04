@@ -1,38 +1,10 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from typing import Optional, Literal, List
+from typing import Optional, Literal, TYPE_CHECKING
 from datetime import datetime, date
-from enum import Enum
 
-class EventType(str, Enum):
-    """Buttondown event types"""
-    SUBSCRIBER_OPENED = "subscriber.opened"
-    SUBSCRIBER_CLICKED = "subscriber.clicked"
-    SUBSCRIBER_CONFIRMED = "subscriber.confirmed"
-    SUBSCRIBER_DELIVERED = "subscriber.delivered"
-    SUBSCRIBER_UNSUBSCRIBED = "subscriber.unsubscribed"
-    EMAIL_SENT = "email.sent"
+from pydantic import BaseModel, EmailStr, ConfigDict
 
-class ButtondownSubscriberData(BaseModel):
-    """Subscriber data from Buttondown webhook"""
-    subscriber: str = Field(..., description="Buttondown subscriber UUID")
-    email: Optional[str] = None
-
-class ButtondownWebhookPayload(BaseModel):
-    """Complete webhook payload from Buttondown"""
-    event_type: EventType
-    data: ButtondownSubscriberData
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "event_type": "subscriber.opened",
-                "data": {
-                    "subscriber": "ac79483b-cd28-49c1-982e-8a88e846d7e7"
-                }
-            }
-        }
-    )
-
+if TYPE_CHECKING:
+    from app.services.buttondown_sync import SyncOutcome
 class SubscriberBase(BaseModel):
     """Base subscriber schema"""
     email: Optional[EmailStr] = None
@@ -90,3 +62,37 @@ class EventResponse(BaseModel):
     event_metadata: Optional[dict] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SyncResponse(BaseModel):
+    """Response returned after running a sync."""
+
+    events_created: int
+    events_skipped: int
+    subscribers_created: int
+    subscribers_updated: int
+    requested_since: Optional[datetime] = None
+    effective_since: Optional[datetime] = None
+    latest_event_at: Optional[datetime] = None
+    last_synced_at: Optional[datetime] = None
+
+    @classmethod
+    def from_outcome(cls, outcome: "SyncOutcome") -> "SyncResponse":
+        return cls(
+            events_created=outcome.events_created,
+            events_skipped=outcome.events_skipped,
+            subscribers_created=outcome.subscribers_created,
+            subscribers_updated=outcome.subscribers_updated,
+            requested_since=outcome.requested_since,
+            effective_since=outcome.effective_since,
+            latest_event_at=outcome.latest_event_at,
+            last_synced_at=outcome.last_synced_at,
+        )
+
+
+class SyncStateResponse(BaseModel):
+    """Current sync cursor information."""
+
+    last_synced_at: Optional[datetime]
+    default_lookback_days: int
+    pending_initial_sync: bool

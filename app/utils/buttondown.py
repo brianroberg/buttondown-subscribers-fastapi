@@ -1,8 +1,14 @@
-"""Buttondown API utilities for testing and integration"""
+"""Buttondown API utilities for synchronising data via the public API."""
+
+from __future__ import annotations
+
+import logging
+from datetime import datetime, timezone
+from typing import Dict, Iterable, List, Optional
+from urllib.parse import urljoin
 
 import requests
-import logging
-from typing import Optional, Dict, Any
+
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -10,145 +16,122 @@ settings = get_settings()
 
 
 class ButtondownAPIError(Exception):
-    """Raised when Buttondown API returns an error"""
-    pass
+    """Raised when Buttondown API returns an error."""
 
 
 class ButtondownAPI:
-    """Client for Buttondown API interactions"""
+    """Client for Buttondown API interactions."""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, timeout: int = 15):
         """
-        Initialize Buttondown API client
+        Initialize Buttondown API client.
 
         Args:
-            api_key: Buttondown API key. If not provided, uses BUTTONDOWN_API_KEY from settings
+            api_key: Optional explicit API key. Falls back to settings.
+            timeout: Timeout for HTTP requests in seconds.
         """
         self.api_key = api_key or settings.buttondown_api_key
         if not self.api_key:
             raise ValueError("Buttondown API key not configured")
+
         self.base_url = settings.buttondown_api_base_url.rstrip("/")
         if not self.base_url:
             raise ValueError("Buttondown API base URL not configured")
-        self.newsletter_name = settings.buttondown_newsletter_name
 
+        self.timeout = timeout
         self.headers = {
             "Authorization": f"Token {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
-    def trigger_test_webhook(self, webhook_id: Optional[str] = None) -> bool:
+    def iter_events(
+        self,
+        *,
+        event_type: Optional[str] = None,
+        since: Optional[datetime] = None,
+        expand: Optional[List[str]] = None,
+        ordering: str = "creation_date",
+    ) -> Iterable[Dict]:
         """
-        Trigger a test webhook from Buttondown
-
-        This sends a webhook with fake/test data to your configured webhook endpoint.
-        Useful for testing webhook processing without real subscriber events.
+        Yield engagement events from Buttondown.
 
         Args:
-            webhook_id: Webhook ID to test. If not provided, uses BUTTONDOWN_WEBHOOK_ID from settings
+            event_type: Optional event type filter.
+            since: Optional datetime to fetch events strictly after this moment.
+            expand: Optional list of related objects to expand.
+            ordering: API ordering field (defaults to chronological order).
 
-        Returns:
-            True if test webhook was triggered successfully
-
-        Raises:
-            ButtondownAPIError: If the API request fails
+        Yields:
+            Raw event dictionaries from the Buttondown API.
         """
-        webhook_id = webhook_id or settings.buttondown_webhook_id
-        if not webhook_id:
-            raise ValueError("Webhook ID not configured")
+        base_path = "/events"
+        url = urljoin(f"{self.base_url}/", base_path.lstrip("/"))
+        params: Dict[str, object] = {"ordering": ordering}
 
-        url = f"{self.base_url}/webhooks/{webhook_id}/test"
+        if event_type:
+            params["event_type"] = event_type
 
+        if expand:
+            params["expand"] = expand
+
+        filtered_since = False
+        if since:
+            params["creation_date__gt"] = self._format_datetime(since)
+            filtered_since = True
+
+        next_url: Optional[str] = url
+        first_params: Optional[Dict[str, object]] = params.copy()
+        fallback_attempted = False
+
+        while next_url:
+            request_params = first_params if next_url == url else None
+            response = self._get(next_url, params=request_params)
+            first_params = None  # Only apply query params on the first request
+
+            if response.status_code == 400 and filtered_since and not fallback_attempted:
+                # Some Buttondown deployments may not yet support creation_date__gt.
+                logger.warning("Buttondown API rejected creation_date__gt filter; retrying without it")
+                fallback_attempted = True
+                filtered_since = False
+                params.pop("creation_date__gt", None)
+                next_url = url
+                first_params = params.copy()
+                continue
+
+            self._raise_for_status(response)
+            payload = response.json()
+
+            for event in payload.get("results", []):
+                yield event
+
+            next_url = payload.get("next")
+
+    def _get(self, url: str, params: Optional[Dict[str, object]] = None) -> requests.Response:
+        """Perform a GET request against the API."""
         try:
-            response = requests.post(url, headers=self.headers, timeout=10)
+            return requests.get(url, headers=self.headers, params=params, timeout=self.timeout)
+        except requests.RequestException as exc:
+            raise ButtondownAPIError(f"Request failed: {exc}") from exc
 
-            if response.status_code == 204:
-                logger.info(f"Successfully triggered test webhook for ID: {webhook_id}")
-                return True
-            else:
-                error_msg = f"Failed to trigger test webhook: HTTP {response.status_code}"
-                if response.text:
-                    error_msg += f" - {response.text}"
-                raise ButtondownAPIError(error_msg)
+    def _raise_for_status(self, response: requests.Response) -> None:
+        """Raise a helpful error if the response is not successful."""
+        if response.status_code >= 400:
+            try:
+                detail = response.json()
+            except ValueError:
+                detail = response.text
+            raise ButtondownAPIError(
+                f"Buttondown API error {response.status_code}: {detail or 'no details'}"
+            )
 
-        except requests.RequestException as e:
-            raise ButtondownAPIError(f"Request failed: {str(e)}")
-
-    def list_webhooks(self) -> Dict[str, Any]:
-        """
-        List all webhooks configured in Buttondown
-
-        Returns:
-            Dictionary containing webhook information
-
-        Raises:
-            ButtondownAPIError: If the API request fails
-        """
-        url = f"{self.base_url}/webhooks"
-
-        try:
-            response = requests.get(url, headers=self.headers, timeout=10)
-
-            if response.status_code == 200:
-                return response.json()
-            else:
-                error_msg = f"Failed to list webhooks: HTTP {response.status_code}"
-                if response.text:
-                    error_msg += f" - {response.text}"
-                raise ButtondownAPIError(error_msg)
-
-        except requests.RequestException as e:
-            raise ButtondownAPIError(f"Request failed: {str(e)}")
-
-    def get_webhook(self, webhook_id: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Get details for a specific webhook
-
-        Args:
-            webhook_id: Webhook ID. If not provided, uses BUTTONDOWN_WEBHOOK_ID from settings
-
-        Returns:
-            Dictionary containing webhook details
-
-        Raises:
-            ButtondownAPIError: If the API request fails
-        """
-        webhook_id = webhook_id or settings.buttondown_webhook_id
-        if not webhook_id:
-            raise ValueError("Webhook ID not configured")
-
-        url = f"{self.base_url}/webhooks/{webhook_id}"
-
-        try:
-            response = requests.get(url, headers=self.headers, timeout=10)
-
-            if response.status_code == 200:
-                return response.json()
-            else:
-                error_msg = f"Failed to get webhook: HTTP {response.status_code}"
-                if response.text:
-                    error_msg += f" - {response.text}"
-                raise ButtondownAPIError(error_msg)
-
-        except requests.RequestException as e:
-            raise ButtondownAPIError(f"Request failed: {str(e)}")
+    @staticmethod
+    def _format_datetime(value: datetime) -> str:
+        """Return an ISO-8601 string with timezone information."""
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc).isoformat()
 
 
-def trigger_test_webhook(webhook_id: Optional[str] = None, api_key: Optional[str] = None) -> bool:
-    """
-    Convenience function to trigger a test webhook
-
-    Args:
-        webhook_id: Webhook ID to test
-        api_key: Buttondown API key
-
-    Returns:
-        True if successful
-
-    Example:
-        >>> from app.utils.buttondown import trigger_test_webhook
-        >>> trigger_test_webhook()  # Uses env vars
-        True
-    """
-    client = ButtondownAPI(api_key=api_key)
-    return client.trigger_test_webhook(webhook_id=webhook_id)
+def get_buttondown_client() -> ButtondownAPI:
+    """Dependency helper for FastAPI to create a Buttondown API client."""
+    return ButtondownAPI()
