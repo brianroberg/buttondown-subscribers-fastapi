@@ -19,9 +19,11 @@ class Settings(BaseSettings):
     buttondown_webhook_secret: str = ""
     buttondown_api_key: str = ""
     buttondown_webhook_id: str = ""  # For testing API
+    buttondown_api_base_url: str = "https://api.buttondown.com/v1"
+    buttondown_newsletter_name: str = "Brian & Carin Roberg's Ministry Updates"
 
     # Security
-    secret_key: str
+    secret_key: str = "dev-secret-key-change-me"
     dashboard_username: str = "admin"
     dashboard_password_hash: str = ""  # Bcrypt hash
 

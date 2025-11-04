@@ -15,7 +15,7 @@ services:
       # Mount frontend build
       - ./frontend/dist:/app/frontend/dist
       # Database persistence
-      - ./data:/app/data
+      - data:/app/data
       # Exclude Python cache
       - /app/app/__pycache__
     ports:

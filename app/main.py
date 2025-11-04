@@ -8,6 +8,7 @@ from app.database import init_db
 from app.routers import webhooks, dashboard
 import logging
 import os
+from pathlib import Path
 
 # Setup logging
 logging.basicConfig(
@@ -60,25 +61,22 @@ def startup_probe():
     """Startup probe for Cloud Run"""
     return {"status": "ready"}
 
-# Root endpoint removed - frontend will handle "/"
-# Uncomment if frontend is not available
-# @app.get("/", tags=["Root"])
-# def read_root():
-#     return {
-#         "service": settings.app_name,
-#         "version": "1.0.0",
-#         "environment": settings.environment
-#     }
-
 # Include routers
 app.include_router(webhooks.router)
 app.include_router(dashboard.router)
 
-# Serve static files from frontend build
-if os.path.exists("frontend/dist"):
-    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="static")
+# Serve static files from frontend build when available
+frontend_dist = Path("frontend/dist")
+assets_dir = frontend_dist / "assets"
+if frontend_dist.exists() and assets_dir.is_dir():
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="static")
 
-    @app.get("/{full_path:path}")
+    @app.get("/", include_in_schema=False)
+    async def serve_root():
+        """Serve SPA index for root route"""
+        return FileResponse(frontend_dist / "index.html")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_frontend(full_path: str = ""):
         """Serve frontend for all non-API routes"""
         # Don't serve frontend for API routes
@@ -95,6 +93,17 @@ if os.path.exists("frontend/dist"):
 
         # Default to index.html for SPA routing
         return FileResponse("frontend/dist/index.html")
+else:
+    logger.info("Frontend build not found; skipping static asset mounting")
+
+    @app.get("/", tags=["Root"])
+    def read_root():
+        """Basic root endpoint for health checks and smoke tests"""
+        return {
+            "service": settings.app_name,
+            "version": "1.0.0",
+            "environment": settings.environment
+        }
 
 if __name__ == "__main__":
     import uvicorn

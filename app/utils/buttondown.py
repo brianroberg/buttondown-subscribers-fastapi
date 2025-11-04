@@ -17,8 +17,6 @@ class ButtondownAPIError(Exception):
 class ButtondownAPI:
     """Client for Buttondown API interactions"""
 
-    BASE_URL = "https://api.buttondown.com/v1"
-
     def __init__(self, api_key: Optional[str] = None):
         """
         Initialize Buttondown API client
@@ -29,6 +27,10 @@ class ButtondownAPI:
         self.api_key = api_key or settings.buttondown_api_key
         if not self.api_key:
             raise ValueError("Buttondown API key not configured")
+        self.base_url = settings.buttondown_api_base_url.rstrip("/")
+        if not self.base_url:
+            raise ValueError("Buttondown API base URL not configured")
+        self.newsletter_name = settings.buttondown_newsletter_name
 
         self.headers = {
             "Authorization": f"Token {self.api_key}",
@@ -55,7 +57,7 @@ class ButtondownAPI:
         if not webhook_id:
             raise ValueError("Webhook ID not configured")
 
-        url = f"{self.BASE_URL}/webhooks/{webhook_id}/test"
+        url = f"{self.base_url}/webhooks/{webhook_id}/test"
 
         try:
             response = requests.post(url, headers=self.headers, timeout=10)
@@ -82,7 +84,7 @@ class ButtondownAPI:
         Raises:
             ButtondownAPIError: If the API request fails
         """
-        url = f"{self.BASE_URL}/webhooks"
+        url = f"{self.base_url}/webhooks"
 
         try:
             response = requests.get(url, headers=self.headers, timeout=10)
@@ -115,7 +117,7 @@ class ButtondownAPI:
         if not webhook_id:
             raise ValueError("Webhook ID not configured")
 
-        url = f"{self.BASE_URL}/webhooks/{webhook_id}"
+        url = f"{self.base_url}/webhooks/{webhook_id}"
 
         try:
             response = requests.get(url, headers=self.headers, timeout=10)

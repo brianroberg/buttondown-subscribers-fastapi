@@ -1,8 +1,15 @@
+import os
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.config import get_settings
 
 settings = get_settings()
+
+# Ensure SQLite directory exists before engine creation
+if settings.sqlalchemy_database_url.startswith("sqlite"):
+    db_dir = os.path.dirname(settings.db_path)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
 
 # Create engine with SQLite-specific optimizations
 engine = create_engine(
