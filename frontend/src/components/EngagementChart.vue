@@ -5,7 +5,7 @@
     <div v-if="loading" class="loading">Loading chart...</div>
 
     <div v-else-if="chartData.labels.length === 0" class="empty-state">
-      No trend data available yet. Webhooks will populate this chart.
+      No trend data available yet. Data will appear after the next sync.
     </div>
 
     <canvas v-else ref="chartCanvas"></canvas>

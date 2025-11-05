@@ -2,7 +2,7 @@
   <div id="app" class="container">
     <header>
       <h1>Buttondown Engagement Tracker</h1>
-      <p class="subtitle">Monitor subscriber engagement in real-time</p>
+      <p class="subtitle">Monitor subscriber engagement at a glance</p>
     </header>
 
     <main>
@@ -22,13 +22,13 @@
     />
 
     <footer>
-      <p class="refresh-info">Dashboard auto-refreshes every 30 seconds</p>
+      <p class="refresh-info">Reload the page whenever you want the latest data.</p>
     </footer>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { dashboardAPI } from './services/api';
 import DashboardStats from './components/DashboardStats.vue';
 import TopSubscribers from './components/TopSubscribers.vue';
@@ -49,7 +49,6 @@ export default {
     const trends = ref([]);
     const selectedSubscriber = ref(null);
     const loading = ref(true);
-    let refreshInterval = null;
 
     const fetchDashboardData = async () => {
       loading.value = true;
@@ -76,14 +75,6 @@ export default {
 
     onMounted(() => {
       fetchDashboardData();
-      // Refresh every 30 seconds
-      refreshInterval = setInterval(fetchDashboardData, 30000);
-    });
-
-    onUnmounted(() => {
-      if (refreshInterval) {
-        clearInterval(refreshInterval);
-      }
     });
 
     return {

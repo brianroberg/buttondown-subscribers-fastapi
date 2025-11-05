@@ -31,7 +31,7 @@
     </table>
 
     <div v-if="!loading && subscribers.length === 0" class="empty-state">
-      No subscriber data available yet. Webhooks will populate this table.
+      No subscriber data available yet. Data will appear after the next sync.
     </div>
   </div>
 </template>

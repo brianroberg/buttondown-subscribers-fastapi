@@ -3,21 +3,27 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from app.config import get_settings
-from app.database import init_db
-from app.routers import dashboard, sync
 import logging
 import os
 from pathlib import Path
+from app.config import get_settings
+from app.database import init_db
+from app.routers import dashboard, sync
+
+settings = get_settings()
+log_level_name = settings.log_level.upper()
+log_level = getattr(logging, log_level_name, logging.INFO)
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-settings = get_settings()
+if log_level_name == "INFO":
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
 
 
 @asynccontextmanager
